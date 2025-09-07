@@ -1,0 +1,11 @@
+# Railway
+services:
+  backend:
+    build:
+      commands:
+        - npm install
+    start:
+      command: node server.js
+    variables:
+      NODE_ENV: production
+      PORT: 8000
