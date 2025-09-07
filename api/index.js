@@ -1,12 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
-
-// Import routes
-const authRoutes = require('../routes/auth');
-const productRoutes = require('../routes/products');
-const chatRoutes = require('../routes/chat');
 
 const app = express();
 
@@ -27,43 +21,94 @@ const connectDB = async () => {
   }
 };
 
-// Connect to database
-connectDB();
-
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://olx1-4po0kq6dg-aditya-rajs-projects-2b2f1ba7.vercel.app', 'https://olx-qwk2w0awt-aditya-rajs-projects-2b2f1ba7.vercel.app']
-    : 'http://localhost:3000',
+  origin: '*',
   credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/chat', chatRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ message: 'SIGIL OLX API is running!', timestamp: new Date().toISOString() });
+// Simple test routes
+app.get('/api', (req, res) => {
+  res.json({ 
+    message: 'SIGIL OLX API is running!', 
+    timestamp: new Date().toISOString(),
+    status: 'healthy'
+  });
 });
 
-// Serve React App (for non-API routes)
-app.use(express.static(path.join(__dirname, '../client/build')));
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    message: 'Health check passed!', 
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
 
-app.get('*', (req, res) => {
-  // Don't serve React app for API routes
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ message: 'API endpoint not found' });
+// Test database connection
+app.get('/api/test-db', async (req, res) => {
+  try {
+    await connectDB();
+    res.json({ 
+      message: 'Database connection successful!',
+      status: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Database connection failed', 
+      error: error.message 
+    });
   }
-  
-  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+});
+
+// Basic auth endpoints
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    await connectDB();
+    res.json({ 
+      message: 'Registration endpoint working',
+      received: Object.keys(req.body)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    await connectDB();
+    res.json({ 
+      message: 'Login endpoint working',
+      received: Object.keys(req.body)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Basic products endpoints
+app.get('/api/products', async (req, res) => {
+  try {
+    await connectDB();
+    res.json({ 
+      message: 'Products endpoint working',
+      products: []
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Handle all other routes
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    message: 'Endpoint not found',
+    path: req.originalUrl,
+    method: req.method
+  });
 });
 
 module.exports = app;
