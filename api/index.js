@@ -33,7 +33,7 @@ connectDB();
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.vercel.app', 'https://olx-qwk2w0awt-aditya-rajs-projects-2b2f1ba7.vercel.app']
+    ? ['https://olx1-4po0kq6dg-aditya-rajs-projects-2b2f1ba7.vercel.app', 'https://olx-qwk2w0awt-aditya-rajs-projects-2b2f1ba7.vercel.app']
     : 'http://localhost:3000',
   credentials: true
 }));
@@ -44,7 +44,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/chat', chatRoutes);
@@ -54,9 +54,16 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'SIGIL OLX API is running!', timestamp: new Date().toISOString() });
 });
 
-// Root route
-app.get('/api', (req, res) => {
-  res.json({ message: 'Welcome to SIGIL OLX API' });
+// Serve React App (for non-API routes)
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+app.get('*', (req, res) => {
+  // Don't serve React app for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ message: 'API endpoint not found' });
+  }
+  
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 module.exports = app;
